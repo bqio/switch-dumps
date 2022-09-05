@@ -31,8 +31,5 @@ for event, elem in ET.iterparse(args.file, events=("start", "end")):
         print(title)
       context = None
       elem.clear()
-      #files = []
-      #for file in elem.iter("file"):
-        #files.append(file.attrib.get("name"))
 with open("data.json", "w") as f:
   json.dump(output, f)
