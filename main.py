@@ -2,8 +2,6 @@ import xml.etree.ElementTree as ET
 import json
 import argparse
 
-FORUM_ID = 1605
-
 context = None
 output = []
 
@@ -31,5 +29,5 @@ for event, elem in ET.iterparse(args.file, events=("start", "end")):
         print(title)
       context = None
       elem.clear()
-with open("data.json", "w") as f:
+with open("f{}.json".format(args.forumid), "w") as f:
   json.dump(output, f)
