@@ -1,40 +1,51 @@
 import xml.etree.ElementTree as ET
+import sys
 import json
-import argparse
-from format import remove_thread_title_tags, remove_removed_threads
 
-context = None
-output = []
+from typing import Iterator
 
-parser = argparse.ArgumentParser(description="Rutracker parser by bqio")
 
-parser.add_argument("-f", dest="file", required=True, type=str, help="rutracker dump file")
-parser.add_argument("-i", dest="forumid", required=True, type=int, help="rutracker forum id")
-parser.add_argument("--remove-title-tags", dest="rtt", required=False, default=False, action='store_true', help="remove title tags")
-parser.add_argument("--remove-removed-threads", dest="rrt", required=False, default=False, action='store_true', help="remove removed threads")
+def iterparse(xml_path: str) -> Iterator[tuple[str, ET.Element]]:
+    return ET.iterparse(xml_path, events=('start', 'end'))
 
-args = parser.parse_args()
 
-for event, elem in ET.iterparse(args.file, events=("start", "end")):
-  if event == "start":
-    if elem.tag == "torrent" and context == None:
-      context = elem
-  if event == "end":
-    if elem == context:
-      forum_id = elem[2].attrib.get("id")
-      if int(forum_id) == args.forumid:
-        title = elem[0].text
-        hash = elem[1].attrib.get("hash")
-        output.append({
-          "title": title,
-          "hash": hash,
-        })
-        print(title)
-      context = None
-      elem.clear()
-with open("f{}.json".format(args.forumid), "w") as f:
-  if args.rrt:
-    output = remove_removed_threads(output)
-  if args.rtt:
-    output = remove_thread_title_tags(output)
-  json.dump(output, f)
+def to_tracker_url(id: int) -> str:
+    if id == 1:
+        return "http://bt.t-ru.org/ann?magnet"
+    else:
+        return f"http://bt{id}.t-ru.org/ann?magnet"
+
+
+dest = []
+context = iterparse(sys.argv[1])
+context = iter(context)
+
+event, root = context.__next__()
+
+for event, elem in context:
+    if event == 'end' and elem.tag == 'torrent':
+        title_elem = elem.find('title')
+        forum_elem = elem.find('forum')
+        torrent_elem = elem.find('torrent')
+        del_elem = elem.find('del')
+
+        if title_elem != None and forum_elem != None and torrent_elem != None and del_elem == None:
+            forum_id = forum_elem.attrib.get('id')
+            title = title_elem.text
+            hash = torrent_elem.attrib.get('hash')
+            tracker = to_tracker_url(
+                int(torrent_elem.attrib.get('tracker_id')))
+
+            if forum_id == sys.argv[2]:
+                entry = {
+                    'title': title,
+                    'hash': hash,
+                    'tracker': tracker
+                }
+                dest.append(entry)
+                print(title, hash, tracker)
+
+        root.clear()
+
+with open(f"forum_{sys.argv[2]}.json", "w") as fp:
+    json.dump(dest, fp)
