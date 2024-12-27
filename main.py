@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import sys
 import json
+import poster
 
 from typing import Iterator
 
@@ -32,6 +33,7 @@ for event, elem in context:
         forum_elem = elem.find("forum")
         torrent_elem = elem.find("torrent")
         del_elem = elem.find("del")
+        content_elem = elem.find("content")
 
         if (
             title_elem != None
@@ -45,7 +47,12 @@ for event, elem in context:
             tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
 
             if forum_id == sys.argv[2]:
-                entry = {"title": title, "hash": hash, "tracker": tracker}
+                entry = {
+                    "title": title,
+                    "hash": hash,
+                    "tracker": tracker,
+                    "poster": poster.from_content(content_elem.text),
+                }
                 dest.append(entry)
                 print(entry)
 
