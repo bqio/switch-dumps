@@ -2,6 +2,8 @@ import xml.etree.ElementTree as ET
 import sys
 import json
 import poster
+import datetime
+import re
 
 from typing import Iterator
 
@@ -41,8 +43,14 @@ for event, elem in context:
             and torrent_elem != None
             and del_elem == None
         ):
+            size = int(elem.attrib.get("size"))
+            published_date = int(
+                datetime.datetime.strptime(
+                    elem.attrib.get("registred_at"), "%Y.%m.%d %H:%M:%S"
+                ).timestamp()
+            )
             forum_id = forum_elem.attrib.get("id")
-            title = title_elem.text
+            title = re.sub(r"\[.*?\]", "", title_elem.text).strip()
             hash = torrent_elem.attrib.get("hash")
             tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
 
@@ -52,6 +60,8 @@ for event, elem in context:
                     "hash": hash,
                     "tracker": tracker,
                     "poster": poster.from_content(content_elem.text),
+                    "size": size,
+                    "published_date": published_date,
                 }
                 dest.append(entry)
                 print(entry)
