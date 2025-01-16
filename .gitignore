@@ -2,3 +2,5 @@
 *.json
 test.py
 __pycache__
+*.txt
+*.log

@@ -4,8 +4,14 @@ import json
 import poster
 import datetime
 import re
+import logging
 
 from typing import Iterator
+from ignore import IGNORED_TOPIC_ID
+
+logging.basicConfig(
+    level=logging.INFO, filename="log.txt", filemode="w", encoding="utf-8"
+)
 
 
 def iterparse(xml_path: str) -> Iterator[tuple[str, ET.Element]]:
@@ -43,28 +49,32 @@ for event, elem in context:
             and torrent_elem != None
             and del_elem == None
         ):
-            size = int(elem.attrib.get("size"))
-            published_date = int(
-                datetime.datetime.strptime(
-                    elem.attrib.get("registred_at"), "%Y.%m.%d %H:%M:%S"
-                ).timestamp()
-            )
-            forum_id = forum_elem.attrib.get("id")
-            title = re.sub(r"\[.*?\]", "", title_elem.text).strip()
-            hash = torrent_elem.attrib.get("hash")
-            tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
+            topic_id = int(elem.attrib.get("id"))
+            if topic_id not in IGNORED_TOPIC_ID:
+                size = int(elem.attrib.get("size"))
+                published_date = int(
+                    datetime.datetime.strptime(
+                        elem.attrib.get("registred_at"), "%Y.%m.%d %H:%M:%S"
+                    ).timestamp()
+                )
+                forum_id = forum_elem.attrib.get("id")
+                title = re.sub(r"\[.*?\]", "", title_elem.text).strip()
+                hash = torrent_elem.attrib.get("hash")
+                tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
 
-            if forum_id == sys.argv[2]:
-                entry = {
-                    "title": title,
-                    "hash": hash,
-                    "tracker": tracker,
-                    "poster": poster.from_content(content_elem.text),
-                    "size": size,
-                    "published_date": published_date,
-                }
-                dest.append(entry)
-                print(entry)
+                if forum_id == sys.argv[2]:
+                    entry = {
+                        "title": title,
+                        "hash": hash,
+                        "tracker": tracker,
+                        "poster": poster.from_content(content_elem.text),
+                        "size": size,
+                        "published_date": published_date,
+                    }
+                    dest.append(entry)
+                    logging.info(entry)
+            else:
+                logging.info(f"Ignore topic id {topic_id}")
 
         root.clear()
 
