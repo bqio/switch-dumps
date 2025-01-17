@@ -9,8 +9,14 @@ import logging
 from typing import Iterator
 from ignore import IGNORED_TOPIC_ID
 
+_LOG_FORMAT = "%(levelname)s :: %(message)s"
+
 logging.basicConfig(
-    level=logging.INFO, filename="log.txt", filemode="w", encoding="utf-8"
+    level=logging.INFO,
+    filename="log.txt",
+    filemode="w",
+    encoding="utf-8",
+    format=_LOG_FORMAT,
 )
 
 
@@ -63,18 +69,23 @@ for event, elem in context:
                 tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
 
                 if forum_id == sys.argv[2]:
+                    try:
+                        _poster = poster.from_content(content_elem.text)
+                    except Exception as e:
+                        logging.error(f"Error {topic_id}: {e}")
+                        _poster = ""
                     entry = {
                         "title": title,
                         "hash": hash,
                         "tracker": tracker,
-                        "poster": poster.from_content(content_elem.text),
+                        "poster": _poster,
                         "size": size,
                         "published_date": published_date,
                     }
                     dest.append(entry)
-                    logging.info(entry)
+                    logging.info(f"Add {topic_id}: {entry}")
             else:
-                logging.info(f"Ignore topic id {topic_id}")
+                logging.info(f"Ignore {topic_id}")
 
         root.clear()
 

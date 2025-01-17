@@ -16,6 +16,12 @@ class Entry:
     published_date: int # Unix epoch
 ```
 
+## Run
+
+```bash
+py main.py rutracker.xml 1605
+```
+
 ## API
 
 https://api.github.com/repos/bqio/switch-dumps/releases/latest

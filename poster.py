@@ -1,6 +1,6 @@
 import re
 
-IMG_REGEXP = r"\[img.*\](.*)\["
+IMG_REGEXP = r"\[img=right\](https?://\S+\.(?:png|jpe?g))\[/img\]"
 
 
 def from_content(content: str) -> str:
