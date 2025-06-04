@@ -19,7 +19,7 @@ class Entry:
 ## Run
 
 ```bash
-py main.py rutracker.xml 1605
+py dump.py rutracker.xml 1605 20250531
 ```
 
 ## API
