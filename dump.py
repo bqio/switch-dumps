@@ -8,8 +8,10 @@ import logging
 
 from typing import Iterator
 from ignore import IGNORED_TOPIC_ID
+from pathlib import Path
 
 _LOG_FORMAT = "%(levelname)s :: %(message)s"
+_POSTERS_DIR = Path("posters")
 
 
 def iterparse(xml_path: str) -> Iterator[tuple[str, ET.Element]]:
@@ -23,7 +25,7 @@ def to_tracker_url(id: int) -> str:
         return f"http://bt{id}.t-ru.org/ann?magnet"
 
 
-def dump(xml_path: str, forum_id: int) -> list[dict]:
+def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict]:
     dest: list[dict] = []
     context = iterparse(xml_path)
     context = iter(context)
@@ -58,6 +60,10 @@ def dump(xml_path: str, forum_id: int) -> list[dict]:
                     if forum_id == int(topic_forum_id):
                         try:
                             _poster = poster.from_content(content_elem.text)
+                            if with_posters:
+                                _poster = poster.load_into_dir(
+                                    hash, _poster, _POSTERS_DIR
+                                )
                         except Exception as e:
                             logging.error(f"Error {topic_id}: {e}")
                             _poster = ""
@@ -65,7 +71,7 @@ def dump(xml_path: str, forum_id: int) -> list[dict]:
                             "title": title,
                             "hash": hash,
                             "tracker": tracker,
-                            "poster": _poster,
+                            "poster": str(_poster),
                             "size": size,
                             "published_date": published_date,
                         }
@@ -84,7 +90,7 @@ def save_json(dest: list[dict], output_name: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) < 4:
         print(f"Usage: {sys.argv[0]} xml_path forum_id output_name")
         exit(0)
     logging.basicConfig(
@@ -97,5 +103,6 @@ if __name__ == "__main__":
     xml_path = sys.argv[1]
     forum_id = int(sys.argv[2])
     output_name = sys.argv[3]
-    dump_data = dump(xml_path, forum_id)
+    with_posters = len(sys.argv) == 5 and sys.argv[4] == "--with-posters"
+    dump_data = dump(xml_path, forum_id, with_posters)
     save_json(dump_data, output_name)

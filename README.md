@@ -20,6 +20,8 @@ class Entry:
 
 ```bash
 py dump.py rutracker.xml 1605 20250531
+# Сохранять постеры локально
+py dump.py rutracker.xml 1605 20250531 --with-posters
 ```
 
 ## API

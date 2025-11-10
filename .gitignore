@@ -4,3 +4,6 @@ test.py
 __pycache__
 log.txt
 *.log
+/posters
+viewer.html
+*.zip
