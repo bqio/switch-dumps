@@ -25,11 +25,12 @@ def to_tracker_url(id: int) -> str:
         return f"http://bt{id}.t-ru.org/ann?magnet"
 
 
-def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict]:
+def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict[str, str | int]]:
     dest: list[dict] = []
     context = iterparse(xml_path)
     context = iter(context)
     event, root = context.__next__()
+    
     for event, elem in context:
         if event == "end" and elem.tag == "torrent":
             title_elem = elem.find("title")
@@ -42,36 +43,78 @@ def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict]
                 title_elem != None
                 and forum_elem != None
                 and torrent_elem != None
+                and content_elem != None
                 and del_elem == None
             ):
-                topic_id = int(elem.attrib.get("id"))
+                # check topic id
+                topic_id = elem.attrib.get("id")
+                if topic_id is None:
+                    raise ValueError("elem.attrib.id is None")
+                topic_id = int(topic_id)
+
                 if topic_id not in IGNORED_TOPIC_ID:
-                    size = int(elem.attrib.get("size"))
+                    # check torrent size
+                    size = elem.attrib.get("size")
+                    if size is None:
+                        raise ValueError("elem.attrib.size is None")
+                    size = int(size)
+                    
+                    # check topic registred_at
+                    registred_at = elem.attrib.get("registred_at")
+                    if registred_at is None:
+                        raise ValueError("elem.attrib.registred_at is None")
                     published_date = int(
                         datetime.datetime.strptime(
-                            elem.attrib.get("registred_at"), "%Y.%m.%d %H:%M:%S"
+                            registred_at, "%Y.%m.%d %H:%M:%S"
                         ).timestamp()
                     )
-                    topic_forum_id = forum_elem.attrib.get("id")
-                    title = re.sub(r"\[.*?\]", "", title_elem.text).strip()
-                    hash = torrent_elem.attrib.get("hash")
-                    tracker = to_tracker_url(int(torrent_elem.attrib.get("tracker_id")))
+                    
+                    # check forum id
+                    _forum_id = forum_elem.attrib.get("id")
+                    if _forum_id is None:
+                        raise ValueError("forum_elem.attrib.id is None")
+                    _forum_id = int(_forum_id)
+                    
+                    # check topic title text
+                    title_text = title_elem.text
+                    if title_text is None:
+                        raise ValueError("title_elem.text is None")
+                    title_text = re.sub(r"\[.*?\]", "", title_text).strip()
+                    
+                    # check torrent hash
+                    torrent_hash = torrent_elem.attrib.get("hash")
+                    if torrent_hash is None:
+                        raise ValueError("torrent_elem.attrib.hash is None")
+                    
+                    # check torrent tracker id
+                    tracker_id = torrent_elem.attrib.get("tracker_id")
+                    if tracker_id is None:
+                        raise ValueError("torrent_elem.attrib.tracker_id is None")
+                    tracker_id = int(tracker_id)
+                    tracker = to_tracker_url(tracker_id)
 
-                    if forum_id == int(topic_forum_id):
+                    if forum_id == _forum_id:
+                        _poster = ""
                         try:
-                            _poster = poster.from_content(content_elem.text)
+                            # check topic content text
+                            content_text = content_elem.text
+                            if content_text is None:
+                                raise ValueError("content_elem.text is None")
+
+                            # check topic poster
+                            _poster = poster.from_content(content_text)
                             if with_posters:
                                 _poster = poster.load_into_dir(
-                                    hash, _poster, _POSTERS_DIR
+                                    torrent_hash, _poster, _POSTERS_DIR
                                 )
                         except Exception as e:
                             logging.error(f"Error {topic_id}: {e}")
-                            _poster = ""
+                            
                         entry = {
-                            "title": title,
-                            "hash": hash,
+                            "title": title_text,
+                            "hash": torrent_hash,
                             "tracker": tracker,
-                            "poster": str(_poster),
+                            "poster": _poster,
                             "size": size,
                             "published_date": published_date,
                         }
@@ -84,15 +127,16 @@ def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict]
     return dest
 
 
-def save_json(dest: list[dict], output_name: str) -> None:
+def save_json(data: list[dict[str, str | int]], output_name: str) -> None:
     with open(f"{output_name}.json", "w", encoding="utf-8") as fp:
-        json.dump(dest, fp)
+        json.dump(data, fp)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"Usage: {sys.argv[0]} xml_path forum_id output_name")
         exit(0)
+    
     logging.basicConfig(
         level=logging.INFO,
         filename="log.txt",
@@ -100,6 +144,7 @@ if __name__ == "__main__":
         encoding="utf-8",
         format=_LOG_FORMAT,
     )
+    
     xml_path = sys.argv[1]
     forum_id = int(sys.argv[2])
     output_name = sys.argv[3]
