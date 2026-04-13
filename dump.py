@@ -5,6 +5,7 @@ import poster
 import datetime
 import re
 import logging
+import screens
 
 from typing import Iterator
 from ignore import IGNORED_TOPIC_ID
@@ -25,12 +26,18 @@ def to_tracker_url(id: int) -> str:
         return f"http://bt{id}.t-ru.org/ann?magnet"
 
 
-def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict[str, str | int]]:
+def make_magnet_uri(info_hash: str, tracker: str) -> str:
+    return f"magnet:?xt=urn:btih:{info_hash}&tr={tracker}"
+
+
+def dump(
+    xml_path: str, forum_id: int, with_posters: bool = False
+) -> list[dict[str, str | int]]:
     dest: list[dict] = []
     context = iterparse(xml_path)
     context = iter(context)
     event, root = context.__next__()
-    
+
     for event, elem in context:
         if event == "end" and elem.tag == "torrent":
             title_elem = elem.find("title")
@@ -58,7 +65,7 @@ def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict[
                     if size is None:
                         raise ValueError("elem.attrib.size is None")
                     size = int(size)
-                    
+
                     # check topic registred_at
                     registred_at = elem.attrib.get("registred_at")
                     if registred_at is None:
@@ -68,24 +75,24 @@ def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict[
                             registred_at, "%Y.%m.%d %H:%M:%S"
                         ).timestamp()
                     )
-                    
+
                     # check forum id
                     _forum_id = forum_elem.attrib.get("id")
                     if _forum_id is None:
                         raise ValueError("forum_elem.attrib.id is None")
                     _forum_id = int(_forum_id)
-                    
+
                     # check topic title text
                     title_text = title_elem.text
                     if title_text is None:
                         raise ValueError("title_elem.text is None")
                     title_text = re.sub(r"\[.*?\]", "", title_text).strip()
-                    
+
                     # check torrent hash
                     torrent_hash = torrent_elem.attrib.get("hash")
                     if torrent_hash is None:
                         raise ValueError("torrent_elem.attrib.hash is None")
-                    
+
                     # check torrent tracker id
                     tracker_id = torrent_elem.attrib.get("tracker_id")
                     if tracker_id is None:
@@ -103,20 +110,21 @@ def dump(xml_path: str, forum_id: int, with_posters: bool = False) -> list[dict[
 
                             # check topic poster
                             _poster = poster.from_content(content_text)
+                            screenshots = screens.from_content(content_text)
                             if with_posters:
                                 _poster = poster.load_into_dir(
                                     torrent_hash, _poster, _POSTERS_DIR
                                 )
                         except Exception as e:
                             logging.error(f"Error {topic_id}: {e}")
-                            
+
                         entry = {
                             "title": title_text,
-                            "hash": torrent_hash,
-                            "tracker": tracker,
+                            "magnetURI": make_magnet_uri(torrent_hash, tracker),
                             "poster": _poster,
                             "size": size,
                             "published_date": published_date,
+                            "screenshots": screenshots,
                         }
                         dest.append(entry)
                         logging.info(f"Add {topic_id}: {entry}")
@@ -136,7 +144,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"Usage: {sys.argv[0]} xml_path forum_id output_name")
         exit(0)
-    
+
     logging.basicConfig(
         level=logging.INFO,
         filename="log.txt",
@@ -144,7 +152,7 @@ if __name__ == "__main__":
         encoding="utf-8",
         format=_LOG_FORMAT,
     )
-    
+
     xml_path = sys.argv[1]
     forum_id = int(sys.argv[2])
     output_name = sys.argv[3]

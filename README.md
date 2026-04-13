@@ -9,11 +9,11 @@ Nintendo Switch rutracker forum dump
 ```python
 class Entry:
     title: str # Game title
-    hash: str # Magnet hash
-    tracker: str # Tracker URL
+    magnetURI: str # Magnet uri
     poster: str # Poster URL
     size: int # Size (in bytes)
     published_date: int # Unix epoch
+    screenshots: list[str] # Screenshots links (if available)
 ```
 
 ## Run
