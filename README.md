@@ -16,12 +16,22 @@ class Entry:
     screenshots: list[str] # Screenshots links (if available)
 ```
 
-## Run
+## Usage
 
 ```bash
-py dump.py rutracker.xml 1605 20250531
-# Сохранять постеры локально
-py dump.py rutracker.xml 1605 20250531 --with-posters
+usage: dump.py [-h] [--posters] [--screenshots] xml_path forum_id output
+
+Nintendo Switch rutracker forum dumper script, by bqio
+
+positional arguments:
+  xml_path           path to the XML dump file (Path)
+  forum_id           rutracker forum id (int)
+  output             output json file path (Path)
+
+options:
+  -h, --help         show this help message and exit
+  --posters, -p      download posters locally (bool)
+  --screenshots, -s  add screenshots (if available) to the json dump (bool)
 ```
 
 ## API

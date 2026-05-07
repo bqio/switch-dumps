@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import sys
+import argparse
 import json
 import poster
 import datetime
@@ -31,7 +31,7 @@ def make_magnet_uri(info_hash: str, tracker: str) -> str:
 
 
 def dump(
-    xml_path: str, forum_id: int, with_posters: bool = False
+    xml_path: str, forum_id: int, with_posters: bool, with_screenshots: bool
 ) -> list[dict[str, str | int]]:
     dest: list[dict] = []
     context = iterparse(xml_path)
@@ -110,7 +110,9 @@ def dump(
 
                             # check topic poster
                             _poster = poster.from_content(content_text)
-                            screenshots = screens.from_content(content_text)
+                            screenshots = []
+                            if with_screenshots:
+                                screenshots = screens.from_content(content_text)
                             if with_posters:
                                 _poster = poster.load_into_dir(
                                     torrent_hash, _poster, _POSTERS_DIR
@@ -135,15 +137,31 @@ def dump(
     return dest
 
 
-def save_json(data: list[dict[str, str | int]], output_name: str) -> None:
-    with open(f"{output_name}.json", "w", encoding="utf-8") as fp:
+def save_json(data: list[dict[str, str | int]], output: Path) -> None:
+    with open(output, "w", encoding="utf-8") as fp:
         json.dump(data, fp)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print(f"Usage: {sys.argv[0]} xml_path forum_id output_name")
-        exit(0)
+    parser = argparse.ArgumentParser(
+        description="Nintendo Switch rutracker forum dumper script, by bqio"
+    )
+
+    parser.add_argument("xml_path", type=Path, help="path to the XML dump file (Path)")
+    parser.add_argument("forum_id", type=int, help="rutracker forum id (int)")
+    parser.add_argument("output", type=Path, help="output json file path (Path)")
+
+    parser.add_argument(
+        "--posters", "-p", action="store_true", help="download posters locally (bool)"
+    )
+    parser.add_argument(
+        "--screenshots",
+        "-s",
+        action="store_true",
+        help="add screenshots (if available) to the json dump (bool)",
+    )
+
+    args = parser.parse_args()
 
     logging.basicConfig(
         level=logging.INFO,
@@ -153,9 +171,13 @@ if __name__ == "__main__":
         format=_LOG_FORMAT,
     )
 
-    xml_path = sys.argv[1]
-    forum_id = int(sys.argv[2])
-    output_name = sys.argv[3]
-    with_posters = len(sys.argv) == 5 and sys.argv[4] == "--with-posters"
-    dump_data = dump(xml_path, forum_id, with_posters)
-    save_json(dump_data, output_name)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter(_LOG_FORMAT)
+    console.setFormatter(formatter)
+    logging.getLogger().addHandler(console)
+
+    logging.info("Script starting...")
+
+    dump_data = dump(args.xml_path, args.forum_id, args.posters, args.screenshots)
+    save_json(dump_data, args.output)
