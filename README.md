@@ -1,6 +1,7 @@
 # switch-dumps
 
-![Github All Releases](https://img.shields.io/github/downloads/bqio/switch-dumps/total.svg)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/bqio/switch-dumps/total?style=for-the-badge)
+
 
 Nintendo Switch rutracker forum dump
 
