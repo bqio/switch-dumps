@@ -1,3 +1,4 @@
+import sys
 import xml.etree.ElementTree as ET
 import argparse
 import json
@@ -7,7 +8,7 @@ import re
 import logging
 import screens
 
-from typing import Iterator
+from typing import Iterator, BinaryIO, TextIO
 from ignore import IGNORED_TOPIC_ID
 from pathlib import Path
 
@@ -15,8 +16,8 @@ _LOG_FORMAT = "%(levelname)s :: %(message)s"
 _POSTERS_DIR = Path("posters")
 
 
-def iterparse(xml_path: str) -> Iterator[tuple[str, ET.Element]]:
-    return ET.iterparse(xml_path, events=("start", "end"))
+def iterparse(xml_source: str | BinaryIO) -> Iterator[tuple[str, ET.Element]]:
+    return ET.iterparse(xml_source, events=("end",))
 
 
 def to_tracker_url(id: int) -> str:
@@ -31,15 +32,19 @@ def make_magnet_uri(info_hash: str, tracker: str) -> str:
 
 
 def dump(
-    xml_path: str, forum_id: int, with_posters: bool, with_screenshots: bool
-) -> list[dict[str, str | int]]:
-    dest: list[dict] = []
-    context = iterparse(xml_path)
-    context = iter(context)
-    event, root = context.__next__()
+    xml_source: str | BinaryIO,
+    forum_id: int,
+    with_posters: bool,
+    with_screenshots: bool,
+    out_fp: TextIO,
+) -> None:
+    context = iterparse(xml_source)
+
+    out_fp.write("[\n")
+    is_first = True
 
     for event, elem in context:
-        if event == "end" and elem.tag == "torrent":
+        if elem.tag == "torrent":
             title_elem = elem.find("title")
             forum_elem = elem.find("forum")
             torrent_elem = elem.find("torrent")
@@ -47,11 +52,11 @@ def dump(
             content_elem = elem.find("content")
 
             if (
-                title_elem != None
-                and forum_elem != None
-                and torrent_elem != None
-                and content_elem != None
-                and del_elem == None
+                title_elem is not None
+                and forum_elem is not None
+                and torrent_elem is not None
+                and content_elem is not None
+                and del_elem is None
             ):
                 # check topic id
                 topic_id = elem.attrib.get("id")
@@ -91,7 +96,11 @@ def dump(
                     # check torrent hash
                     torrent_hash = torrent_elem.attrib.get("hash")
                     if torrent_hash is None:
-                        raise ValueError("torrent_elem.attrib.hash is None")
+                        logging.warning(
+                            f"Пропущен торрент в топике {topic_id}: отсутствует атрибут 'hash'"
+                        )
+                        elem.clear()
+                        continue
 
                     # check torrent tracker id
                     tracker_id = torrent_elem.attrib.get("tracker_id")
@@ -128,18 +137,19 @@ def dump(
                             "published_date": published_date,
                             "screenshots": screenshots,
                         }
-                        dest.append(entry)
+
+                        if not is_first:
+                            out_fp.write(",\n")
+                        is_first = False
+                        json.dump(entry, out_fp, ensure_ascii=False)
+
                         logging.info(f"Add {topic_id}: {entry}")
                 else:
                     logging.info(f"Ignore {topic_id}")
 
-            root.clear()
-    return dest
+            elem.clear()
 
-
-def save_json(data: list[dict[str, str | int]], output: Path) -> None:
-    with open(output, "w", encoding="utf-8") as fp:
-        json.dump(data, fp)
+    out_fp.write("\n]\n")
 
 
 if __name__ == "__main__":
@@ -147,7 +157,9 @@ if __name__ == "__main__":
         description="Nintendo Switch rutracker forum dumper script, by bqio"
     )
 
-    parser.add_argument("xml_path", type=Path, help="path to the XML dump file (Path)")
+    parser.add_argument(
+        "xml_path", type=str, help="path to the XML dump file or '-' for stdin"
+    )
     parser.add_argument("forum_id", type=int, help="rutracker forum id (int)")
     parser.add_argument("output", type=Path, help="output json file path (Path)")
 
@@ -179,5 +191,14 @@ if __name__ == "__main__":
 
     logging.info("Script starting...")
 
-    dump_data = dump(args.xml_path, args.forum_id, args.posters, args.screenshots)
-    save_json(dump_data, args.output)
+    if args.xml_path == "-":
+        xml_source = sys.stdin.buffer
+        logging.info("Reading XML from stdin stream...")
+    else:
+        xml_source = args.xml_path
+        logging.info(f"Reading XML from file: {xml_source}")
+
+    with open(args.output, "w", encoding="utf-8") as out_fp:
+        dump(xml_source, args.forum_id, args.posters, args.screenshots, out_fp)
+
+    logging.info("Script finished successfully.")
