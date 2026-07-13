@@ -1,0 +1,5 @@
+services:
+  dump:
+    build: .
+    volumes:
+      - ./output:/output
