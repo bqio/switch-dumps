@@ -2,7 +2,6 @@
 
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/bqio/switch-dumps/total?style=for-the-badge)
 
-
 Nintendo Switch rutracker forum dump
 
 ## Schema
@@ -34,6 +33,10 @@ options:
   --posters, -p      download posters locally (bool)
   --screenshots, -s  add screenshots (if available) to the json dump (bool)
 ```
+
+## Github Actions
+
+A special GitHub Action has been added that automatically creates a dump and publish. You can use it in **Actions → Run dump script and publish release**. Without local posters and screenshots links.
 
 ## API
 

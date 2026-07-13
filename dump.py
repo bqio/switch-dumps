@@ -17,7 +17,7 @@ _POSTERS_DIR = Path("posters")
 
 
 def iterparse(xml_source: str | BinaryIO) -> Iterator[tuple[str, ET.Element]]:
-    return ET.iterparse(xml_source, events=("end",))
+    return ET.iterparse(xml_source, events=("start", "end"))
 
 
 def to_tracker_url(id: int) -> str:
@@ -39,12 +39,14 @@ def dump(
     out_fp: TextIO,
 ) -> None:
     context = iterparse(xml_source)
+    context = iter(context)
+    event, root = context.__next__()
 
     out_fp.write("[\n")
     is_first = True
 
     for event, elem in context:
-        if elem.tag == "torrent":
+        if event == "end" and elem.tag == "torrent":
             title_elem = elem.find("title")
             forum_elem = elem.find("forum")
             torrent_elem = elem.find("torrent")
@@ -96,8 +98,7 @@ def dump(
                     # check torrent hash
                     torrent_hash = torrent_elem.attrib.get("hash")
                     if torrent_hash is None:
-                        elem.clear()
-                        continue
+                        raise ValueError("torrent_elem.attrib.hash is None")
 
                     # check torrent tracker id
                     tracker_id = torrent_elem.attrib.get("tracker_id")
@@ -144,7 +145,7 @@ def dump(
                 else:
                     logging.info(f"Ignore {topic_id}")
 
-            elem.clear()
+            root.clear()
 
     out_fp.write("\n]\n")
 
