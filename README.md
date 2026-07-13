@@ -36,7 +36,7 @@ options:
 
 ## Github Actions
 
-A special GitHub Action has been added that automatically creates a dump and publish. You can use it in **Actions → Run dump script and publish release**. Without local posters and screenshots links.
+A special GitHub Action has been added that automatically creates a dump and publish. You can use it in **Actions → Run dump script and publish release**. Without local posters and screenshots links. Also, the action runs **once a month, on the 15th, at 3 AM**.
 
 ## API
 
