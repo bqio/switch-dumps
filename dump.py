@@ -96,9 +96,6 @@ def dump(
                     # check torrent hash
                     torrent_hash = torrent_elem.attrib.get("hash")
                     if torrent_hash is None:
-                        logging.warning(
-                            f"Пропущен торрент в топике {topic_id}: отсутствует атрибут 'hash'"
-                        )
                         elem.clear()
                         continue
 
