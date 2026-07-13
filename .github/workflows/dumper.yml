@@ -32,7 +32,7 @@ jobs:
             -v ${{ github.workspace }}:/output \
             --entrypoint bash \
             dump-script:latest \
-            -c "echo '=== Start torrent download ===' && aria2c --bt-metadata-only=false --bt-save-metadata=false --summary-interval=10 --seed-time=0 \"\$MAGNET_LINK\" && echo '=== Download complete. Start dumper ===' && xz -d -c *.xml.xz | python dump.py - 1605 /output/result.json"
+            -c "echo '=== Start torrent download ===' && aria2c --bt-metadata-only=false --bt-save-metadata=false --summary-interval=10 --seed-time=0 \"\$MAGNET_LINK\" && echo '=== Download complete. Start dumper ===' && xz -d -c *.xml.xz | python dump.py --screenshots - 1605 /output/result.json"
 
       - name: Generate Tag Name
         id: tag

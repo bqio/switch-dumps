@@ -24,5 +24,5 @@ CMD bash -c "\
            --seed-time=0 \
            \"$MAGNET_LINK\" && \
     echo '=== Download complete. Start dumper ===' && \
-    xz -d -c *.xml.xz | python dump.py - 1605 /output/result.json \
+    xz -d -c *.xml.xz | python dump.py --screenshots - 1605 /output/result.json \
 "
