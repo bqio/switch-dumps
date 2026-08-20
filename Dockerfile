@@ -14,7 +14,7 @@ RUN mkdir /output
 
 COPY . .
 
-ENV MAGNET_LINK='magnet:?xt=urn:btih:6B5CC220E4D438709FAB834DFDAF64014E35E8B2&tr=http%3A%2F%2Fbt4.t-ru.org%2Fann%3Fmagnet&dn=%D0%9D%D0%B5%D0%BE%D1%84%D0%B8%D1%86%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F%20%D0%B1%D0%B0%D0%B7%D0%B0%20%D1%80%D0%B0%D0%B7%D0%B4%D0%B0%D1%87%20RuTracker.ORG%20v.%2020260725'
+ENV MAGNET_LINK='magnet:?xt=urn:btih:6B5CC220E4D438709FAB834DFDAF64014E35E8B2&tr=http%3A%2F%2Fbt4.t-ru.org%2Fann%3Fmagnet'
 
 CMD bash -c "\
     echo '=== Start torrent download ===' && \
