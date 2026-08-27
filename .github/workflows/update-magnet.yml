@@ -1,0 +1,43 @@
+name: Update Magnet Link
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-magnet:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Update Magnet Link
+        run: |
+          python get_magnet.py \
+            --feed-url "https://feed.rutracker.cc/atom/f/10.atom" \
+            --topic-id 5591249
+          test -s magnet.txt
+
+      - name: Commit Magnet Link
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add magnet.txt
+
+          if git diff --cached --quiet; then
+            echo "Magnet link has not changed."
+          else
+            git commit -m "chore: update magnet link"
+            git push
+          fi

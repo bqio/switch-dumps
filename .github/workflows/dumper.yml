@@ -11,6 +11,7 @@ permissions:
 jobs:
   run-dump:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
@@ -29,14 +30,12 @@ jobs:
       - name: Run Docker Image
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/output \
-            --entrypoint bash \
-            dump-script:latest \
-            -c "echo '=== Start torrent download ===' && aria2c --bt-metadata-only=false --bt-save-metadata=false --summary-interval=10 --seed-time=0 \"\$MAGNET_LINK\" && echo '=== Download complete. Start dumper ===' && xz -d -c *.xml.xz | python dump.py --screenshots - 1605 /output/result.json"
+            -v "${{ github.workspace }}:/output" \
+            dump-script:latest
 
       - name: Generate Tag Name
         id: tag
-        run: echo "tag_name=v$(date +'%Y.%m.%d-%H%M%S')" >> $GITHUB_OUTPUT
+        run: echo "tag_name=v$(date +'%Y.%m.%d-%H%M%S')" >> "$GITHUB_OUTPUT"
 
       - name: Create Release and Upload Asset
         env:
