@@ -1,1 +1,1 @@
-magnet:?xt=urn:btih:3E953DF96CA91A06AD79F7E06D9818ACEDA57B24&tr=http%3A%2F%2Fbt4.t-ru.org%2Fann%3Fmagnet
+magnet:?xt=urn:btih:A519E3FA3C8B7372B5272D2E031D94D0F0D88F3B&tr=http%3A%2F%2Fbt4.t-ru.org%2Fann%3Fmagnet
